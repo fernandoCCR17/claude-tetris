@@ -40,6 +40,14 @@ jobs:
 
             Tu tarea tiene dos partes. Escribe todo en español.
 
+            FORMATO: todo lo que comentes en el issue debe estar en Markdown
+            compatible con GitHub (GitHub Flavored Markdown): encabezados con `#`,
+            listas con `-` o `1.`, **negritas**, `código en línea`, bloques de
+            código con triple acento grave y lenguaje (```js), y listas de tareas
+            `- [ ]` para los criterios de aceptación. Cita archivos como
+            `archivo:línea` entre acentos graves. Deja una línea en blanco entre
+            bloques y evita HTML salvo el marcador inicial.
+
             ## 1. Labels
             1. Ejecuta `gh label list --repo ${{ github.repository }} --limit 100`.
             2. Lee el issue con `gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }}`.
