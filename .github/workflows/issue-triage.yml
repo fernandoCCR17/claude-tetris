@@ -1,0 +1,96 @@
+name: Issue Triage
+
+on:
+  issues:
+    # `edited` se dispara al editar el título o el cuerpo (issue principal).
+    # Los comentarios usan otro evento (issue_comment), así que no lo activan.
+    types: [opened, edited]
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    # Evita bucles y ruido: ignorar ediciones hechas por bots.
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Analizar issue con Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Eres el asistente de triage de este repositorio (un Tetris en JavaScript
+            vanilla con HTML5 Canvas; lee CLAUDE.md para entender la arquitectura).
+
+            REPO: ${{ github.repository }}
+            ISSUE: #${{ github.event.issue.number }}
+            EVENTO: ${{ github.event.action }}
+
+            Tu tarea tiene dos partes. Escribe todo en español.
+
+            ## 1. Labels
+            1. Ejecuta `gh label list --repo ${{ github.repository }} --limit 100`.
+            2. Lee el issue con `gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }}`.
+            3. Elige los labels más apropiados. Prefiere los que ya existen
+               (p. ej. `bug`, `enhancement`, `documentation`, `question`). Si falta
+               uno claramente necesario, créalo con `gh label create`.
+               Considera dimensiones como: tipo (bug / enhancement / question /
+               documentation), prioridad (priority: high / medium / low) y área
+               (gameplay, rendering, controls, scoring, ui, docs).
+            4. Aplica los labels con
+               `gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --add-label "a,b"`.
+               Si el evento es `edited`, quita con `--remove-label` los labels de
+               triage que ya no apliquen. No toques labels puestos por humanos que
+               sigan siendo válidos.
+
+            ## 2. Diagnóstico general
+            Explora el código (`game.js`, `index.html`, `style.css`) con las
+            herramientas de lectura para localizar la causa probable. NO modifiques
+            archivos ni abras PRs: solo analiza. El diagnóstico servirá al equipo
+            para implementar la solución después, así que sé concreto.
+
+            Publica UN comentario con este formato exacto (la primera línea es un
+            marcador, no la cambies):
+
+            <!-- claude-issue-triage -->
+            ## 🤖 Diagnóstico automático
+
+            **Resumen:** una o dos frases sobre el problema o la solicitud.
+
+            **Tipo y prioridad sugeridos:** ...
+
+            **Análisis / causa probable:** qué ocurre y por qué, citando
+            `archivo:línea` y funciones relevantes (p. ej. `collide()`, `clearLines()`).
+
+            **Archivos y funciones involucrados:** lista.
+
+            **Propuesta de solución:** pasos concretos de implementación, y riesgos
+            o efectos secundarios a considerar (ver "Gotchas" de CLAUDE.md).
+
+            **Información faltante:** preguntas para el autor, o "Ninguna".
+
+            **Criterios de aceptación:** lista breve y verificable.
+
+            Para no duplicar comentarios: antes de publicar, busca un comentario
+            existente que contenga `<!-- claude-issue-triage -->` con
+            `gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[] | select(.body | contains("claude-issue-triage")) | .id'`.
+            Si existe, actualízalo con
+            `gh api -X PATCH repos/${{ github.repository }}/issues/comments/<ID> -f body="..."`;
+            si no, créalo con `gh issue comment`.
+
+            Si el issue es spam o no tiene relación con el proyecto, aplica el
+            label `invalid` y deja un diagnóstico de una línea explicándolo.
+          claude_args: |
+            --allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh label create:*),Bash(gh api:*)"
