@@ -39,6 +39,7 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const resumeBtn = document.getElementById('resume-btn');
 const themeToggle = document.getElementById('theme-toggle');
 
 // Tema: oscuro por defecto. La cuadrícula se pinta en el canvas, así que su
@@ -232,6 +233,7 @@ function endGame() {
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  resumeBtn.hidden = true;
   overlay.classList.remove('hidden');
 }
 
@@ -239,12 +241,15 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    overlay.classList.add('hidden');
+    resumeBtn.hidden = true;
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
     overlayTitle.textContent = 'PAUSA';
     overlayScore.textContent = '';
+    resumeBtn.hidden = false;
     overlay.classList.remove('hidden');
   }
 }
@@ -278,6 +283,7 @@ function init() {
   next = randomPiece();
   spawn();
   updateHUD();
+  resumeBtn.hidden = true;
   overlay.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
@@ -370,6 +376,10 @@ function setupTouchControls() {
 setupTouchControls();
 
 restartBtn.addEventListener('click', init);
+resumeBtn.addEventListener('click', () => {
+  togglePause();
+  resumeBtn.blur(); // evita que Espacio/Enter vuelvan a activar el botón
+});
 
 function redraw() {
   draw();

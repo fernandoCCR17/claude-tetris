@@ -14,7 +14,7 @@ Open `index.html` directly, or serve statically (e.g. `python -m http.server 800
 
 Three files, all logic in `game.js` (a classic script loaded by `index.html`, not an ES module, `'use strict'`):
 
-- `index.html` defines the DOM that `game.js` looks up by id at load time (`board`, `next-canvas`, `score`, `lines`, `level`, `overlay`, `overlay-title`, `overlay-score`, `restart-btn`). Renaming an id requires updating the lookups at the top of `game.js`.
+- `index.html` defines the DOM that `game.js` looks up by id at load time (`board`, `next-canvas`, `score`, `lines`, `level`, `overlay`, `overlay-title`, `overlay-score`, `resume-btn`, `restart-btn`). Renaming an id requires updating the lookups at the top of `game.js`.
 - `game.js` keeps all state in module-level `let` globals (`board`, `current`, `next`, `score`, `lines`, `level`, `paused`, `gameOver`, `dropInterval`, ...), reset by `init()`, which is also the restart handler.
 - Board is a `ROWS×COLS` (20×10) matrix of ints; `0` is empty and `1..7` index into both `COLORS` and `PIECES` (I, O, T, S, Z, J, L). Pieces are `{type, shape, x, y}` where `shape` is a matrix holding its own color index, so merging copies cell values straight into the board.
 

@@ -197,7 +197,8 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn {
+#restart-btn,
+#resume-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--on-accent);
@@ -210,8 +211,25 @@ kbd {
   letter-spacing: 1px;
   }
 
-#restart-btn:hover {
+#restart-btn:hover,
+#resume-btn:hover {
   background: var(--accent-hover);
+}
+
+#resume-btn[hidden] {
+  display: none;
+}
+
+/* En pausa, "Reiniciar" pasa a ser la acción secundaria */
+#resume-btn:not([hidden]) + #restart-btn {
+  margin-top: 0;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+#resume-btn:not([hidden]) + #restart-btn:hover {
+  background: var(--accent-glow);
 }
 
 /* ---- Toggle de tema ---- */
