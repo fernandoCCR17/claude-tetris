@@ -319,8 +319,8 @@ function setTheme(name, animate) {
   theme = name;
   document.documentElement.dataset.theme = name;
   const light = name === 'light';
-  themeToggle.textContent = light ? 'Modo oscuro' : 'Modo claro';
-  themeToggle.setAttribute('aria-pressed', String(light));
+  themeToggle.setAttribute('aria-checked', String(light));
+  themeToggle.setAttribute('aria-label', light ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro');
   try { localStorage.setItem('tetris-theme', name); } catch (e) {}
 
   cancelAnimationFrame(themeAnimId);
