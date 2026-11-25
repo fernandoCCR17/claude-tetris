@@ -283,30 +283,91 @@ function init() {
   animId = requestAnimationFrame(loop);
 }
 
+function moveLeft() {
+  if (!collide(current.shape, current.x - 1, current.y)) current.x--;
+}
+
+function moveRight() {
+  if (!collide(current.shape, current.x + 1, current.y)) current.x++;
+}
+
+// Acciones de juego compartidas por teclado y controles táctiles
+const ACTIONS = {
+  left: moveLeft,
+  right: moveRight,
+  down: softDrop,
+  rotate: tryRotate,
+  drop: hardDrop,
+};
+
+function runAction(name) {
+  if (paused || gameOver) return;
+  ACTIONS[name]();
+  updateHUD();
+}
+
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
-  if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
-      if (!collide(current.shape, current.x - 1, current.y)) current.x--;
+      runAction('left');
       break;
     case 'ArrowRight':
-      if (!collide(current.shape, current.x + 1, current.y)) current.x++;
+      runAction('right');
       break;
     case 'ArrowDown':
-      softDrop();
+      runAction('down');
       break;
     case 'ArrowUp':
     case 'KeyX':
-      tryRotate();
+      runAction('rotate');
       break;
     case 'Space':
       e.preventDefault();
-      hardDrop();
+      runAction('drop');
       break;
   }
-  updateHUD();
 });
+
+// ---- Controles táctiles ----
+const REPEAT_DELAY = 250; // ms antes de empezar a repetir
+const REPEAT_RATE = 70;   // ms entre repeticiones
+const REPEATABLE = ['left', 'right', 'down'];
+
+function setupTouchControls() {
+  const container = document.getElementById('touch-controls');
+  if (!container) return;
+  let delayId, repeatId;
+
+  function stopRepeat() {
+    clearTimeout(delayId);
+    clearInterval(repeatId);
+  }
+
+  container.querySelectorAll('button[data-action]').forEach(btn => {
+    const action = btn.dataset.action;
+
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      stopRepeat();
+      if (action === 'pause') { togglePause(); return; }
+      runAction(action);
+      if (REPEATABLE.includes(action)) {
+        delayId = setTimeout(() => {
+          repeatId = setInterval(() => runAction(action), REPEAT_RATE);
+        }, REPEAT_DELAY);
+      }
+    });
+
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(type =>
+      btn.addEventListener(type, stopRepeat));
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  });
+
+  window.addEventListener('blur', stopRepeat);
+}
+
+setupTouchControls();
 
 restartBtn.addEventListener('click', init);
 
