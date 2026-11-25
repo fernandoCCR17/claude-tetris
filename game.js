@@ -39,6 +39,15 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const themeToggle = document.getElementById('theme-toggle');
+
+// Tema: oscuro por defecto. La cuadrícula se pinta en el canvas, así que su
+// color se interpola en JS durante la transición (misma duración que el CSS).
+const THEME_GRID = { dark: [34, 34, 46], light: [226, 228, 234] };
+const THEME_MS = 600;
+let theme = 'dark';
+let gridRGB = THEME_GRID.dark.slice();
+let themeAnimId;
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
@@ -169,7 +178,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = `rgb(${gridRGB[0]}, ${gridRGB[1]}, ${gridRGB[2]})`;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -301,4 +310,46 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+function redraw() {
+  draw();
+  drawNext();
+}
+
+function setTheme(name, animate) {
+  theme = name;
+  document.documentElement.dataset.theme = name;
+  const light = name === 'light';
+  themeToggle.textContent = light ? 'Modo oscuro' : 'Modo claro';
+  themeToggle.setAttribute('aria-pressed', String(light));
+  try { localStorage.setItem('tetris-theme', name); } catch (e) {}
+
+  cancelAnimationFrame(themeAnimId);
+  const from = gridRGB.slice();
+  const to = THEME_GRID[name];
+  if (!animate) {
+    gridRGB = to.slice();
+    redraw();
+    return;
+  }
+  const start = performance.now();
+  (function step(now) {
+    const t = Math.min(1, (now - start) / THEME_MS);
+    gridRGB = from.map((v, i) => Math.round(v + (to[i] - v) * t));
+    redraw(); // repinta también en pausa o game over (el bucle está detenido)
+    if (t < 1) themeAnimId = requestAnimationFrame(step);
+  })(start);
+}
+
+themeToggle.addEventListener('click', () => {
+  setTheme(theme === 'dark' ? 'light' : 'dark', true);
+  themeToggle.blur(); // evita que Espacio/Enter vuelvan a activar el botón
+});
+
 init();
+
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('tetris-theme'); } catch (e) {}
+setTheme(savedTheme === 'light' ? 'light' : 'dark', false);
+// Activa las transiciones CSS solo después del primer pintado
+requestAnimationFrame(() => requestAnimationFrame(() =>
+  document.documentElement.classList.add('theme-anim')));
